@@ -1,0 +1,139 @@
+services:
+
+  # ── Infrastructure ──────────────────────────────────────
+  postgres-keycloak:
+    image: postgres:15
+    container_name: ent-postgres-keycloak
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+    volumes:
+      - postgres-keycloak-data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.4
+    container_name: keycloak-ent
+    command: start-dev --import-realm
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak123
+    depends_on:
+      - postgres-keycloak
+    volumes:
+      - ./keycloak-config:/opt/keycloak/data/import
+
+  cassandra:
+    image: cassandra:4.1
+    container_name: ent-cassandra
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: ent-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: MINIO_ACCESS_KEY
+      MINIO_ROOT_PASSWORD: MINIO_SECRET_KEY
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+  # ── Microservices ────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ent-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+  auth-service:
+    build: ./ms1-auth
+    container_name: ent-auth-service
+    ports:
+      - "8000:8000"
+    environment:
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: est-sale
+      KEYCLOAK_CLIENT_ID: ent-backend
+      KEYCLOAK_CLIENT_SECRET: secret123
+    depends_on:
+      - keycloak
+      
+  ajout-service:
+    build: ./ms2-ajout
+    container_name: ent-ajout-service
+    ports:
+      - "8002:8000"
+    environment:
+      MINIO_ENDPOINT: minio
+      CASSANDRA_HOST: cassandra
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  download-service:
+    build: ./ms3-download
+    container_name: ent-download-service
+    ports:
+      - "8003:8000"
+    environment:
+      CASSANDRA_HOST: cassandra
+      MINIO_HOST: minio:9000
+      MINIO_ACCESS: MINIO_ACCESS_KEY
+      MINIO_SECRET: MINIO_SECRET_KEY
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  admin-service:
+    build: ./ms4-admin
+    container_name: ent-admin-service
+    ports:
+      - "8004:8000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+
+  ai-service:
+    build: ./ms5-ai
+    container_name: ent-ai-service
+    ports:
+      - "8005:8000"
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3
+    depends_on:
+      - ollama
+
+  frontend:
+    build: ./frontend
+    container_name: ent-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+
+volumes:
+  postgres-keycloak-data:
+  minio-data:
+  ollama-data:

@@ -1,0 +1,116 @@
+/* App.css - Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --est-green: #2E7D32;
+  --est-green-light: #4CAF50;
+  --est-green-dark: #1B5E20;
+  --est-green-soft: #E8F5E9;
+  --est-white: #FFFFFF;
+  --est-gray: #F5F5F5;
+  --est-gray-dark: #E0E0E0;
+  --est-text: #333333;
+  --est-text-light: #666666;
+  --est-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --est-shadow-hover: 0 8px 24px rgba(46, 125, 50, 0.15);
+  --est-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  color: var(--est-text);
+  min-height: 100vh;
+}
+
+.app-container {
+  min-height: 100vh;
+}
+
+/* Loading Animation */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: var(--est-green);
+  gap: 10px;
+}
+
+.loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--est-green-soft);
+  border-top-color: var(--est-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast.success {
+  border-left: 4px solid var(--est-green);
+  color: var(--est-green);
+}
+
+.toast.error {
+  border-left: 4px solid #ff4444;
+  color: #ff4444;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--est-gray);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--est-green-light);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--est-green);
+}
