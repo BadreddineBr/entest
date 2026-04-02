@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/api';
+import { authService, getKeycloakForgotPasswordUrl, getKeycloakRegistrationUrl } from '../services/api';
 import './Login.css';
 
 const Login = () => {
@@ -9,6 +9,32 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (!code) return;
+    const dedupeKey = `kc_oauth_${code}`;
+    if (sessionStorage.getItem(dedupeKey)) return;
+    sessionStorage.setItem(dedupeKey, '1');
+    const redirectUri = `${window.location.origin}/login`;
+    (async () => {
+      setLoading(true);
+      setError('');
+      try {
+        await authService.oauthExchange(code, redirectUri);
+        window.history.replaceState({}, document.title, '/login');
+        navigate('/dashboard');
+      } catch (e) {
+        setError(
+          "Impossible de finaliser la connexion après Keycloak. Vérifiez l'URL de redirection dans le client Keycloak."
+        );
+        window.history.replaceState({}, document.title, '/login');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,9 +98,13 @@ const Login = () => {
         </form>
 
         <div className="login-footer">
-          <a href="#">Mot de passe oublié ?</a>
+          <a href={getKeycloakForgotPasswordUrl()} rel="noreferrer">
+            Mot de passe oublié ?
+          </a>
           <span className="login-separator">|</span>
-          <a href="#">Nouveau ? Valider votre compte</a>
+          <a href={getKeycloakRegistrationUrl()} rel="noreferrer">
+            Nouveau ? Créer / valider votre compte
+          </a>
         </div>
       </div>
     </div>

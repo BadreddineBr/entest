@@ -23,6 +23,11 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+
+class OAuthCallbackRequest(BaseModel):
+    code: str
+    redirect_uri: str
+
 @app.get("/")
 def root():
     return {"service": "MS1 - Auth Service", "status": "OK"}
@@ -37,6 +42,25 @@ def login(data: LoginRequest):
         "username": data.username,
         "password": data.password,
     })
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail=response.json())
+    return response.json()
+
+
+@app.post("/api/auth/oauth-callback")
+def oauth_callback(data: OAuthCallbackRequest):
+    """Échange le code OIDC (inscription / flux navigateur) contre des tokens — secret côté serveur."""
+    token_url = f"{KEYCLOAK_URL}/realms/{REALM}/protocol/openid-connect/token"
+    response = requests.post(
+        token_url,
+        data={
+            "grant_type": "authorization_code",
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "code": data.code,
+            "redirect_uri": data.redirect_uri,
+        },
+    )
     if response.status_code != 200:
         raise HTTPException(status_code=401, detail=response.json())
     return response.json()
