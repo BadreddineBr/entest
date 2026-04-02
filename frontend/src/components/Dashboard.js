@@ -26,7 +26,14 @@ const Dashboard = () => {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', email: '', nom: '', prenom: '', role: 'etudiant' });
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    nom: '',
+    prenom: '',
+    role: 'etudiant',
+    password: '',
+  });
   const [viewingCourse, setViewingCourse] = useState(null);
   const [editingCourse, setEditingCourse] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -102,11 +109,27 @@ const Dashboard = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('access_token');
-    await createUser(newUser, 'Bearer ' + token);
-    setShowAddForm(false);
-    setNewUser({ username: '', email: '', nom: '', prenom: '', role: 'etudiant' });
-    loadUsers(user);
+    if (!newUser.password || newUser.password.length < 6) {
+      alert('Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('access_token');
+      await createUser(newUser, 'Bearer ' + token);
+      setShowAddForm(false);
+      setNewUser({
+        username: '',
+        email: '',
+        nom: '',
+        prenom: '',
+        role: 'etudiant',
+        password: '',
+      });
+      loadUsers(user);
+    } catch (err) {
+      const d = err.response?.data?.detail;
+      alert(typeof d === 'string' ? d : 'Erreur lors de la création du compte');
+    }
   };
 
   const handleDeleteCourse = async (courseId) => {
@@ -727,6 +750,7 @@ const Dashboard = () => {
               <form onSubmit={handleCreateUser} className="users-add-form">
                 <input placeholder="Nom utilisateur" value={newUser.username} onChange={e => setNewUser({...newUser, username:e.target.value})} required className="users-input" />
                 <input placeholder="Email" type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email:e.target.value})} required className="users-input" />
+                <input placeholder="Mot de passe (min. 6 car.)" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password:e.target.value})} required minLength={6} autoComplete="new-password" className="users-input" />
                 <input placeholder="Nom" value={newUser.nom} onChange={e => setNewUser({...newUser, nom:e.target.value})} required className="users-input" />
                 <input placeholder="Prenom" value={newUser.prenom} onChange={e => setNewUser({...newUser, prenom:e.target.value})} required className="users-input" />
                 <select value={newUser.role} onChange={e => setNewUser({...newUser, role:e.target.value})} className="users-input">

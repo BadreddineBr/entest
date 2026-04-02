@@ -14,16 +14,27 @@ function AdminUsers() {
     email: '',
     nom: '',
     prenom: '',
-    role: 'etudiant'
+    role: 'etudiant',
+    password: '',
   });
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
+  const getToken = () => {
+    const t = localStorage.getItem('access_token');
+    if (!t) return null;
+    return `Bearer ${t}`;
+  };
+
   const fetchUsers = async () => {
     try {
-      const token = 'fake-token-admin';
+      const token = getToken();
+      if (!token) {
+        setError('Vous devez être connecté en tant qu’administrateur.');
+        return;
+      }
       const data = await getUsers(token);
       setUsers(data.users);
       setError('');
@@ -38,7 +49,8 @@ function AdminUsers() {
   const handleDelete = async (userId) => {
     if (window.confirm('Supprimer cet utilisateur ?')) {
       try {
-        const token = 'fake-token-admin';
+        const token = getToken();
+        if (!token) return;
         await deleteUser(userId, token);
         fetchUsers(); // Recharger la liste
       } catch (err) {
@@ -57,31 +69,44 @@ function AdminUsers() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = 'fake-token-admin';
-      
+      const token = getToken();
+      if (!token) {
+        setError('Session expirée. Reconnectez-vous.');
+        return;
+      }
+      if (!editingUser && (!formData.password || formData.password.length < 6)) {
+        setError('Le mot de passe doit contenir au moins 6 caractères.');
+        return;
+      }
+
       if (editingUser) {
-        // Mode modification
-        await updateUser(editingUser.id, formData, token);
+        const { password, ...rest } = formData;
+        await updateUser(editingUser.id, { ...rest, password }, token);
         alert('Utilisateur modifié avec succès !');
       } else {
-        // Mode création
         await createUser(formData, token);
         alert('Utilisateur créé avec succès !');
       }
-      
-      // Réinitialiser le formulaire
+
       setFormData({
         username: '',
         email: '',
         nom: '',
         prenom: '',
-        role: 'etudiant'
+        role: 'etudiant',
+        password: '',
       });
       setEditingUser(null);
       setShowForm(false);
       fetchUsers(); // Recharger la liste
     } catch (err) {
-      setError('Erreur lors de l\'enregistrement');
+      const msg =
+        err.response?.data?.detail ||
+        (typeof err.response?.data?.detail === 'object'
+          ? JSON.stringify(err.response.data.detail)
+          : null) ||
+        err.message;
+      setError(typeof msg === 'string' ? msg : 'Erreur lors de l\'enregistrement');
     }
   };
 
@@ -92,7 +117,8 @@ function AdminUsers() {
       email: user.email,
       nom: user.nom,
       prenom: user.prenom,
-      role: user.role
+      role: user.role,
+      password: '',
     });
     setShowForm(true);
   };
@@ -105,7 +131,8 @@ function AdminUsers() {
       email: '',
       nom: '',
       prenom: '',
-      role: 'etudiant'
+      role: 'etudiant',
+      password: '',
     });
   };
 
@@ -138,7 +165,9 @@ function AdminUsers() {
                 value={formData.username}
                 onChange={handleInputChange}
                 required
+                disabled={!!editingUser}
                 style={styles.input}
+                title={editingUser ? 'Le nom d’utilisateur Keycloak ne peut pas être modifié ici' : ''}
               />
             </div>
             <div style={styles.formGroup}>
@@ -152,6 +181,36 @@ function AdminUsers() {
                 style={styles.input}
               />
             </div>
+            {!editingUser && (
+              <div style={styles.formGroup}>
+                <label>Mot de passe (Keycloak):</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  style={styles.input}
+                  placeholder="Au moins 6 caractères"
+                />
+              </div>
+            )}
+            {editingUser && (
+              <div style={styles.formGroup}>
+                <label>Nouveau mot de passe (optionnel):</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  autoComplete="new-password"
+                  style={styles.input}
+                  placeholder="Laisser vide pour ne pas changer"
+                />
+              </div>
+            )}
             <div style={styles.formGroup}>
               <label>Nom:</label>
               <input

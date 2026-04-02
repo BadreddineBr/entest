@@ -110,9 +110,15 @@ services:
     container_name: ent-admin-service
     ports:
       - "8004:8000"
+    environment:
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: est-sale
+      KEYCLOAK_CLIENT_ID: ent-backend
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
     depends_on:
-      cassandra:
-        condition: service_healthy
+      keycloak:
+        condition: service_started
 
   ai-service:
     build: ./ms5-ai
