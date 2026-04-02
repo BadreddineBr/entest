@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, coursService, aiService } from '../services/api';
-import { getUsers, createUser, deleteUser, getMyProfile } from '../services/adminService';
+import { getUsers, createUser, deleteUser } from '../services/adminService';
 import './Dashboard.css';
 
 const MINIO = 'http://192.168.1.61:9000/courses/';
@@ -33,13 +33,7 @@ const Dashboard = () => {
     prenom: '',
     role: 'etudiant',
     password: '',
-    groupe: '',
-    departement: '',
-    specialite: '',
-    grade: '',
-    bureau: '',
   });
-  const [profile, setProfile] = useState(null);
   const [viewingCourse, setViewingCourse] = useState(null);
   const [editingCourse, setEditingCourse] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -72,20 +66,6 @@ const Dashboard = () => {
     if (roles.includes('enseignant')) loadCourses('enseignant');
     if (roles.includes('admin')) loadUsers(currentUser);
   }, [navigate]);
-
-  useEffect(() => {
-    if (loading || !user) return;
-    (async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
-        const p = await getMyProfile('Bearer ' + token);
-        setProfile(p);
-      } catch {
-        setProfile(null);
-      }
-    })();
-  }, [loading, user]);
 
   const loadCourses = async (role) => {
     setCoursesLoading(true);
@@ -144,11 +124,6 @@ const Dashboard = () => {
         prenom: '',
         role: 'etudiant',
         password: '',
-        groupe: '',
-        departement: '',
-        specialite: '',
-        grade: '',
-        bureau: '',
       });
       loadUsers(user);
     } catch (err) {
@@ -396,15 +371,6 @@ const Dashboard = () => {
     : users;
   const adminListUsers = adminFilterRole ? filteredAdminUsers : users;
 
-  const formatUserFicheCol = (u) => {
-    if (u.role === 'etudiant') return u.groupe || u.filiere || '—';
-    if (u.role === 'enseignant') {
-      const parts = [u.departement, u.specialite, u.grade].filter(Boolean);
-      return parts.length ? parts.join(' · ') : '—';
-    }
-    return '—';
-  };
-
   return (
     <div className="dashboard">
       <aside className="sidebar">
@@ -547,52 +513,6 @@ const Dashboard = () => {
             </div>
           ))}
         </div>
-
-        {isEtudiant && profile && (
-          <div className="profile-strip profile-strip-etu fade-in">
-            <div className="profile-strip-icon" aria-hidden>◎</div>
-            <div className="profile-strip-body">
-              <div className="profile-strip-label">Groupe & filière</div>
-              <div className="profile-strip-value">
-                {profile.groupe || profile.filiere || 'Non renseigné — demandez à l\'administration'}
-              </div>
-            </div>
-            <div className="profile-strip-side">
-              <span className="profile-strip-pill">EST Salé</span>
-              <span className="profile-strip-email">{profile.email || user?.email}</span>
-            </div>
-          </div>
-        )}
-
-        {isEnseignant && profile && (
-          <div className="teacher-fiche-card fade-in">
-            <div className="teacher-fiche-head">
-              <span className="teacher-fiche-title">Ma fiche enseignant</span>
-              <span className="teacher-fiche-badge">Personnalisé ENT</span>
-            </div>
-            <div className="teacher-fiche-grid">
-              <div className="teacher-fiche-item">
-                <span className="teacher-fiche-k">Département</span>
-                <span className="teacher-fiche-v">{profile.departement || '—'}</span>
-              </div>
-              <div className="teacher-fiche-item">
-                <span className="teacher-fiche-k">Spécialité</span>
-                <span className="teacher-fiche-v">{profile.specialite || '—'}</span>
-              </div>
-              <div className="teacher-fiche-item">
-                <span className="teacher-fiche-k">Grade</span>
-                <span className="teacher-fiche-v">{profile.grade || '—'}</span>
-              </div>
-              <div className="teacher-fiche-item teacher-fiche-wide">
-                <span className="teacher-fiche-k">Bureau / contact</span>
-                <span className="teacher-fiche-v">{profile.bureau || '—'}</span>
-              </div>
-            </div>
-            <p className="teacher-fiche-hint">
-              Ces informations sont renseignées par l&apos;administration. Pour toute modification, contactez un administrateur ENT.
-            </p>
-          </div>
-        )}
 
         {isEtudiant && (
           <div className="card fade-in">
@@ -974,7 +894,7 @@ const Dashboard = () => {
               </div>
               <div className="card-body">
                 {showAddForm && (
-                  <form onSubmit={handleCreateUser} className="users-add-form users-add-form-extended">
+                  <form onSubmit={handleCreateUser} className="users-add-form">
                     <input
                       placeholder="Nom d'utilisateur"
                       value={newUser.username}
@@ -1016,12 +936,7 @@ const Dashboard = () => {
                     />
                     <select
                       value={newUser.role}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          role: e.target.value,
-                        })
-                      }
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                       className="users-input"
                       disabled={!!adminFilterRole}
                       title={adminFilterRole ? 'Rôle imposé par la section' : ''}
@@ -1030,42 +945,6 @@ const Dashboard = () => {
                       <option value="enseignant">Enseignant</option>
                       <option value="admin">Administrateur</option>
                     </select>
-                    {newUser.role === 'etudiant' && (
-                      <input
-                        placeholder="Groupe / filière (ex. Génie Info — S3)"
-                        value={newUser.groupe}
-                        onChange={(e) => setNewUser({ ...newUser, groupe: e.target.value })}
-                        className="users-input"
-                      />
-                    )}
-                    {newUser.role === 'enseignant' && (
-                      <>
-                        <input
-                          placeholder="Département"
-                          value={newUser.departement}
-                          onChange={(e) => setNewUser({ ...newUser, departement: e.target.value })}
-                          className="users-input"
-                        />
-                        <input
-                          placeholder="Spécialité / discipline"
-                          value={newUser.specialite}
-                          onChange={(e) => setNewUser({ ...newUser, specialite: e.target.value })}
-                          className="users-input"
-                        />
-                        <input
-                          placeholder="Grade (PES, PA, etc.)"
-                          value={newUser.grade}
-                          onChange={(e) => setNewUser({ ...newUser, grade: e.target.value })}
-                          className="users-input"
-                        />
-                        <input
-                          placeholder="Bureau / contact (pièce, téléphone)"
-                          value={newUser.bureau}
-                          onChange={(e) => setNewUser({ ...newUser, bureau: e.target.value })}
-                          className="users-input"
-                        />
-                      </>
-                    )}
                     <button type="submit" className="users-submit-btn">
                       Créer le compte
                     </button>
@@ -1083,7 +962,6 @@ const Dashboard = () => {
                           <th>Nom</th>
                           <th>Prénom</th>
                           <th>Email</th>
-                          <th>Groupe / fiche</th>
                           <th>Rôle</th>
                           <th style={{ textAlign: 'center' }}>Actions</th>
                         </tr>
@@ -1095,7 +973,6 @@ const Dashboard = () => {
                             <td>{u.nom}</td>
                             <td>{u.prenom}</td>
                             <td>{u.email}</td>
-                            <td className="td-fiche">{formatUserFicheCol(u)}</td>
                             <td>
                               <span
                                 className={`role-pill-table ${ROLE_META[u.role]?.color || ''}`}

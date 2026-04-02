@@ -95,18 +95,13 @@ def get_user_app_role(user_id: str, client_uuid: Optional[str] = None) -> str:
     return "etudiant"
 
 
-def _attr_first(attrs: Dict[str, Any], key: str) -> Optional[str]:
-    v = attrs.get(key)
-    if v and isinstance(v, list) and len(v) > 0 and v[0]:
-        return str(v[0]).strip()
-    return None
-
-
 def user_to_app_dict(kc_user: Dict[str, Any], client_uuid: str) -> Dict[str, Any]:
     uid = kc_user["id"]
     role = get_user_app_role(uid, client_uuid)
     attrs = kc_user.get("attributes") or {}
-    groupe = _attr_first(attrs, "groupe") or _attr_first(attrs, "filiere")
+    filiere = None
+    if "filiere" in attrs and attrs["filiere"]:
+        filiere = attrs["filiere"][0]
     out: Dict[str, Any] = {
         "id": uid,
         "username": kc_user.get("username") or "",
@@ -116,15 +111,8 @@ def user_to_app_dict(kc_user: Dict[str, Any], client_uuid: str) -> Dict[str, Any
         "role": role,
         "actif": kc_user.get("enabled", True),
     }
-    if groupe:
-        out["groupe"] = groupe
-    legacy_f = _attr_first(attrs, "filiere")
-    if legacy_f and not _attr_first(attrs, "groupe"):
-        out["filiere"] = legacy_f
-    for key in ("departement", "specialite", "grade", "bureau"):
-        v = _attr_first(attrs, key)
-        if v:
-            out[key] = v
+    if filiere:
+        out["filiere"] = filiere
     return out
 
 
@@ -182,32 +170,6 @@ def map_user_client_role(user_id: str, role_key: str) -> None:
         raise HTTPException(status_code=400, detail=pr.text)
 
 
-def _build_create_attributes(
-    role: str,
-    groupe: Optional[str],
-    filiere: Optional[str],
-    departement: Optional[str],
-    specialite: Optional[str],
-    grade: Optional[str],
-    bureau: Optional[str],
-) -> Dict[str, List[str]]:
-    attrs: Dict[str, List[str]] = {}
-    if role == "etudiant":
-        g = (groupe or filiere or "").strip()
-        if g:
-            attrs["groupe"] = [g]
-    elif role == "enseignant":
-        if departement and departement.strip():
-            attrs["departement"] = [departement.strip()]
-        if specialite and specialite.strip():
-            attrs["specialite"] = [specialite.strip()]
-        if grade and grade.strip():
-            attrs["grade"] = [grade.strip()]
-        if bureau and bureau.strip():
-            attrs["bureau"] = [bureau.strip()]
-    return attrs
-
-
 def create_user_keycloak(
     username: str,
     email: str,
@@ -216,11 +178,6 @@ def create_user_keycloak(
     password: str,
     role: str,
     filiere: Optional[str] = None,
-    groupe: Optional[str] = None,
-    departement: Optional[str] = None,
-    specialite: Optional[str] = None,
-    grade: Optional[str] = None,
-    bureau: Optional[str] = None,
 ) -> Dict[str, Any]:
     if role not in APP_ROLES:
         raise HTTPException(status_code=400, detail="Rôle invalide")
@@ -232,11 +189,8 @@ def create_user_keycloak(
         "enabled": True,
         "emailVerified": True,
     }
-    extra = _build_create_attributes(
-        role, groupe, filiere, departement, specialite, grade, bureau
-    )
-    if extra:
-        body["attributes"] = extra
+    if filiere and role == "etudiant":
+        body["attributes"] = {"filiere": [filiere]}
     r = _admin_request("POST", "/users", json=body)
     if r.status_code == 409:
         raise HTTPException(status_code=409, detail="Ce nom d'utilisateur ou cet email existe déjà.")
@@ -257,21 +211,6 @@ def create_user_keycloak(
     return get_user_app_dict(user_id)
 
 
-def _patch_attributes(
-    current_attrs: Dict[str, Any], **patches: Optional[str]
-) -> Dict[str, Any]:
-    attrs = dict(current_attrs or {})
-    for key, val in patches.items():
-        if val is None:
-            continue
-        s = val.strip() if isinstance(val, str) else ""
-        if s == "":
-            attrs.pop(key, None)
-        else:
-            attrs[key] = [s]
-    return attrs
-
-
 def update_user_keycloak(
     user_id: str,
     email: Optional[str] = None,
@@ -281,11 +220,6 @@ def update_user_keycloak(
     actif: Optional[bool] = None,
     password: Optional[str] = None,
     filiere: Optional[str] = None,
-    groupe: Optional[str] = None,
-    departement: Optional[str] = None,
-    specialite: Optional[str] = None,
-    grade: Optional[str] = None,
-    bureau: Optional[str] = None,
 ) -> Dict[str, Any]:
     r = _admin_request("GET", f"/users/{user_id}")
     if r.status_code == 404:
@@ -302,37 +236,16 @@ def update_user_keycloak(
         updated["firstName"] = prenom
     if actif is not None:
         updated["enabled"] = actif
-    if any(x is not None for x in (filiere, groupe, departement, specialite, grade, bureau)):
-        cur_attrs = current.get("attributes") or {}
-        merged = dict(cur_attrs)
-        if groupe is not None:
-            merged = _patch_attributes(merged, groupe=groupe)
-            if groupe and str(groupe).strip():
-                merged.pop("filiere", None)
-        if filiere is not None and groupe is None:
-            merged = _patch_attributes(merged, filiere=filiere)
-        merged = _patch_attributes(
-            merged,
-            departement=departement,
-            specialite=specialite,
-            grade=grade,
-            bureau=bureau,
-        )
-        updated["attributes"] = merged
+    if filiere is not None:
+        attrs = dict(current.get("attributes") or {})
+        if filiere == "":
+            attrs.pop("filiere", None)
+        else:
+            attrs["filiere"] = [filiere]
+        updated["attributes"] = attrs
     needs_put = any(
         x is not None
-        for x in (
-            email,
-            nom,
-            prenom,
-            actif,
-            filiere,
-            groupe,
-            departement,
-            specialite,
-            grade,
-            bureau,
-        )
+        for x in (email, nom, prenom, actif, filiere)
     )
     if needs_put:
         ur = _admin_request("PUT", f"/users/{user_id}", json=updated)
