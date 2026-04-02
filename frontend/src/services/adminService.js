@@ -1,9 +1,11 @@
 import axios from 'axios';
+import { ADMIN_URL } from './api';
 
+// Same base as api.js (192.168.1.61 in dev) — avoid localhost when UI is opened from another host
 const API_URL =
   process.env.REACT_APP_ADMIN_API_URL ||
   process.env.REACT_APP_ADMIN_URL ||
-  'http://localhost:8004';
+  ADMIN_URL;
 
 function authHeader(token) {
   if (!token) return {};

@@ -92,4 +92,15 @@ export const aiService = {
   },
 };
 
-export { authApi, ajoutApi, downloadApi, adminApi, aiApi };
+export {
+  authApi,
+  ajoutApi,
+  downloadApi,
+  adminApi,
+  aiApi,
+  AUTH_URL,
+  AJOUT_URL,
+  DOWNLOAD_URL,
+  ADMIN_URL,
+  AI_URL,
+};

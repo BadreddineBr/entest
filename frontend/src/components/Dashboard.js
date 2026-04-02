@@ -810,8 +810,8 @@ const Dashboard = () => {
             </div>
             <div className="card-body calendar-body">
               <div className="calendar-weekdays">
-                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => (
-                  <div key={d} className="calendar-weekday">{d}</div>
+                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+                  <div key={`cal-wd-${i}`} className="calendar-weekday">{d}</div>
                 ))}
               </div>
               <div className="calendar-grid">
