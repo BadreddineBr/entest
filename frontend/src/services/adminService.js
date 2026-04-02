@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Admin service URL - use localhost for local dev
-const API_URL = process.env.REACT_APP_ADMIN_API_URL || 'http://localhost:8004';
+// Admin service URL - use 192.168.1.61 for local dev
+const API_URL = process.env.REACT_APP_ADMIN_API_URL || 'http://192.168.1.61:8004';
 
 // Récupérer tous les utilisateurs (admin seulement)
 export const getUsers = async (token) => {

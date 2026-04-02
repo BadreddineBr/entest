@@ -4,7 +4,7 @@ import { authService, coursService, aiService } from '../services/api';
 import { getUsers, createUser, deleteUser } from '../services/adminService';
 import './Dashboard.css';
 
-const MINIO = 'http://localhost:9000/courses/';
+const MINIO = 'http://192.168.1.61:9000/courses/';
 const GDOCS = 'https://docs.google.com/viewer?embedded=true&url=';
 
 function getMinioUrl(fileUrl) {
@@ -164,7 +164,7 @@ const Dashboard = () => {
       }
       
       // Send request
-      const response = await fetch(`http://localhost:8002/api/courses/${courseId}`, {
+      const response = await fetch(`http://192.168.1.61:8002/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
