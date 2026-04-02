@@ -2052,8 +2052,8 @@ tbody tr:hover {
   flex-shrink: 0;
 }
 .ni-dot-console {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.35);
+  background: linear-gradient(135deg, #4caf50, #2e7d32);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.45);
 }
 .ni-dot-etu {
   background: #16a34a;
@@ -2105,25 +2105,39 @@ tbody tr:hover {
 }
 
 .admin-console-hero {
-  background: linear-gradient(125deg, #0f172a 0%, #1e293b 48%, #0f172a 100%);
-  color: #f8fafc;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(120deg, #1a5c2a 0%, #2e7d32 42%, #43a047 100%);
+  color: #ffffff;
   border-radius: 14px;
   padding: 20px 22px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 12px 28px rgba(26, 92, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+.admin-console-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.12), transparent 55%);
 }
 
 .admin-console-title {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
 }
 
 .admin-console-sub {
   margin-top: 6px;
   font-size: 12px;
-  color: rgba(248, 250, 252, 0.72);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.45;
+  position: relative;
+  z-index: 1;
 }
 
 .admin-console-kpis {
@@ -2145,17 +2159,18 @@ tbody tr:hover {
   gap: 4px;
   padding: 16px 18px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(46, 125, 50, 0.12);
   background: #fff;
   cursor: pointer;
   text-align: left;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   font: inherit;
   color: inherit;
 }
 .admin-kpi:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 22px rgba(46, 125, 50, 0.12);
+  border-color: rgba(46, 125, 50, 0.25);
 }
 .admin-kpi-n {
   font-size: 28px;
@@ -2274,4 +2289,159 @@ tbody tr:hover {
   background: #fee2e2;
   color: #991b1b;
   border: 1px solid #fca5a5;
+}
+
+.users-add-form-extended {
+  max-width: 520px;
+  grid-template-columns: 1fr 1fr;
+}
+.users-add-form-extended .users-input:nth-child(1),
+.users-add-form-extended .users-input:nth-child(2),
+.users-add-form-extended .users-submit-btn {
+  grid-column: 1 / -1;
+}
+@media (max-width: 600px) {
+  .users-add-form-extended {
+    grid-template-columns: 1fr;
+  }
+}
+
+.td-fiche {
+  font-size: 12px;
+  color: #475569;
+  max-width: 220px;
+}
+
+/* Bandeau profil étudiant */
+.profile-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(46, 125, 50, 0.2);
+  background: linear-gradient(100deg, #ecfdf5 0%, #ffffff 55%);
+  box-shadow: 0 6px 18px rgba(26, 92, 42, 0.08);
+}
+.profile-strip-etu .profile-strip-icon {
+  font-size: 28px;
+  color: #1a5c2a;
+  opacity: 0.85;
+}
+.profile-strip-body {
+  flex: 1;
+  min-width: 200px;
+}
+.profile-strip-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 600;
+}
+.profile-strip-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #14532d;
+  margin-top: 4px;
+}
+.profile-strip-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+.profile-strip-pill {
+  background: #1a5c2a;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.profile-strip-email {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fiche enseignant */
+.teacher-fiche-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(234, 88, 12, 0.22);
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.07);
+  padding: 0;
+  overflow: hidden;
+}
+.teacher-fiche-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, #fff7ed, #ffffff);
+  border-bottom: 1px solid #ffedd5;
+}
+.teacher-fiche-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #9a3412;
+}
+.teacher-fiche-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #c2410c;
+  background: rgba(234, 88, 12, 0.12);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.teacher-fiche-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px 18px;
+}
+@media (min-width: 900px) {
+  .teacher-fiche-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .teacher-fiche-wide {
+    grid-column: span 2;
+  }
+}
+.teacher-fiche-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fafafa;
+  border: 1px solid #f1f5f9;
+}
+.teacher-fiche-k {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  font-weight: 600;
+}
+.teacher-fiche-v {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-word;
+}
+.teacher-fiche-hint {
+  margin: 0;
+  padding: 10px 18px 14px;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.45;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
 }

@@ -27,6 +27,13 @@ export const getUserById = async (userId, token) => {
   return response.data;
 };
 
+export const getMyProfile = async (token) => {
+  const response = await axios.get(`${API_URL}/api/me/profile`, {
+    headers: authHeader(token),
+  });
+  return response.data;
+};
+
 export const createUser = async (userData, token) => {
   const payload = {
     username: userData.username,
@@ -36,7 +43,12 @@ export const createUser = async (userData, token) => {
     prenom: userData.prenom,
     password: userData.password,
   };
+  if (userData.groupe) payload.groupe = userData.groupe;
   if (userData.filiere) payload.filiere = userData.filiere;
+  if (userData.departement) payload.departement = userData.departement;
+  if (userData.specialite) payload.specialite = userData.specialite;
+  if (userData.grade) payload.grade = userData.grade;
+  if (userData.bureau) payload.bureau = userData.bureau;
   const response = await axios.post(`${API_URL}/api/admin/users`, payload, {
     headers: { ...authHeader(token), 'Content-Type': 'application/json' },
   });
@@ -52,6 +64,11 @@ export const updateUser = async (userId, userData, token) => {
   if (userData.actif !== undefined) payload.actif = userData.actif;
   if (userData.password && userData.password.length > 0) payload.password = userData.password;
   if (userData.filiere !== undefined) payload.filiere = userData.filiere;
+  if (userData.groupe !== undefined) payload.groupe = userData.groupe;
+  if (userData.departement !== undefined) payload.departement = userData.departement;
+  if (userData.specialite !== undefined) payload.specialite = userData.specialite;
+  if (userData.grade !== undefined) payload.grade = userData.grade;
+  if (userData.bureau !== undefined) payload.bureau = userData.bureau;
   const response = await axios.put(`${API_URL}/api/admin/users/${userId}`, payload, {
     headers: { ...authHeader(token), 'Content-Type': 'application/json' },
   });
@@ -78,6 +95,7 @@ export const checkHealth = async () => {
 const adminService = {
   getUsers,
   getUserById,
+  getMyProfile,
   createUser,
   updateUser,
   deleteUser,

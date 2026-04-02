@@ -67,6 +67,29 @@ def verify_admin_token(token: str) -> dict:
         return {"valid": False}
 
 
+def verify_any_authenticated_user(authorization: Optional[str]) -> dict:
+    """JWT valide avec rôle ENT (admin, enseignant ou étudiant). Retourne sub (id Keycloak)."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Token manquant")
+    token = authorization.replace("Bearer ", "").strip()
+    info = verify_admin_token(token)
+    if not info.get("valid"):
+        raise HTTPException(status_code=401, detail="Token invalide")
+    try:
+        payload = json.loads(
+            base64.urlsafe_b64decode(token.split(".")[1] + "==").decode()
+        )
+        sub = payload.get("sub")
+        if not sub:
+            raise HTTPException(status_code=401, detail="Token sans identifiant")
+        info["sub"] = sub
+        return info
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token invalide")
+
+
 def require_admin(authorization: Optional[str]) -> dict:
     if not authorization:
         raise HTTPException(status_code=401, detail="Token manquant")
@@ -87,6 +110,11 @@ class CreateUserBody(BaseModel):
     prenom: str = Field(..., min_length=1)
     password: str = Field(..., min_length=6)
     filiere: Optional[str] = None
+    groupe: Optional[str] = None
+    departement: Optional[str] = None
+    specialite: Optional[str] = None
+    grade: Optional[str] = None
+    bureau: Optional[str] = None
 
 
 class UpdateUserBody(BaseModel):
@@ -97,6 +125,18 @@ class UpdateUserBody(BaseModel):
     actif: Optional[bool] = None
     password: Optional[str] = None
     filiere: Optional[str] = None
+    groupe: Optional[str] = None
+    departement: Optional[str] = None
+    specialite: Optional[str] = None
+    grade: Optional[str] = None
+    bureau: Optional[str] = None
+
+
+@app.get("/api/me/profile")
+async def my_profile(authorization: str = Header(None)):
+    """Profil ENT (groupe, fiche enseignant, etc.) pour l'utilisateur connecté."""
+    info = verify_any_authenticated_user(authorization)
+    return keycloak_admin.get_user_app_dict(info["sub"])
 
 
 @app.get("/")
@@ -135,6 +175,11 @@ async def create_user(body: CreateUserBody, authorization: str = Header(None)):
         password=body.password,
         role=body.role.strip(),
         filiere=body.filiere.strip() if body.filiere else None,
+        groupe=body.groupe.strip() if body.groupe else None,
+        departement=body.departement.strip() if body.departement else None,
+        specialite=body.specialite.strip() if body.specialite else None,
+        grade=body.grade.strip() if body.grade else None,
+        bureau=body.bureau.strip() if body.bureau else None,
     )
     return {"message": "Utilisateur créé avec succès", "user": user}
 
@@ -157,6 +202,11 @@ async def update_user(
         actif=patch.get("actif"),
         password=patch.get("password"),
         filiere=patch["filiere"] if "filiere" in patch else None,
+        groupe=patch["groupe"] if "groupe" in patch else None,
+        departement=patch["departement"] if "departement" in patch else None,
+        specialite=patch["specialite"] if "specialite" in patch else None,
+        grade=patch["grade"] if "grade" in patch else None,
+        bureau=patch["bureau"] if "bureau" in patch else None,
     )
     return {"message": "Utilisateur modifié avec succès", "user": user}
 

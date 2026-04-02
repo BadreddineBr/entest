@@ -16,7 +16,21 @@ function AdminUsers() {
     prenom: '',
     role: 'etudiant',
     password: '',
+    groupe: '',
+    departement: '',
+    specialite: '',
+    grade: '',
+    bureau: '',
   });
+
+  const formatFiche = (u) => {
+    if (u.role === 'etudiant') return u.groupe || u.filiere || '—';
+    if (u.role === 'enseignant') {
+      const p = [u.departement, u.specialite, u.grade].filter(Boolean);
+      return p.length ? p.join(' · ') : '—';
+    }
+    return '—';
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -81,7 +95,9 @@ function AdminUsers() {
 
       if (editingUser) {
         const { password, ...rest } = formData;
-        await updateUser(editingUser.id, { ...rest, password }, token);
+        const payload = { ...rest };
+        if (password && password.length > 0) payload.password = password;
+        await updateUser(editingUser.id, payload, token);
         alert('Utilisateur modifié avec succès !');
       } else {
         await createUser(formData, token);
@@ -95,6 +111,11 @@ function AdminUsers() {
         prenom: '',
         role: 'etudiant',
         password: '',
+        groupe: '',
+        departement: '',
+        specialite: '',
+        grade: '',
+        bureau: '',
       });
       setEditingUser(null);
       setShowForm(false);
@@ -119,6 +140,11 @@ function AdminUsers() {
       prenom: user.prenom,
       role: user.role,
       password: '',
+      groupe: user.groupe || user.filiere || '',
+      departement: user.departement || '',
+      specialite: user.specialite || '',
+      grade: user.grade || '',
+      bureau: user.bureau || '',
     });
     setShowForm(true);
   };
@@ -133,6 +159,11 @@ function AdminUsers() {
       prenom: '',
       role: 'etudiant',
       password: '',
+      groupe: '',
+      departement: '',
+      specialite: '',
+      grade: '',
+      bureau: '',
     });
   };
 
@@ -246,6 +277,39 @@ function AdminUsers() {
                 <option value="admin">Administrateur</option>
               </select>
             </div>
+            {formData.role === 'etudiant' && (
+              <div style={styles.formGroup}>
+                <label>Groupe / filière:</label>
+                <input
+                  type="text"
+                  name="groupe"
+                  value={formData.groupe}
+                  onChange={handleInputChange}
+                  style={styles.input}
+                  placeholder="ex. Génie Info — S3"
+                />
+              </div>
+            )}
+            {formData.role === 'enseignant' && (
+              <>
+                <div style={styles.formGroup}>
+                  <label>Département:</label>
+                  <input type="text" name="departement" value={formData.departement} onChange={handleInputChange} style={styles.input} />
+                </div>
+                <div style={styles.formGroup}>
+                  <label>Spécialité:</label>
+                  <input type="text" name="specialite" value={formData.specialite} onChange={handleInputChange} style={styles.input} />
+                </div>
+                <div style={styles.formGroup}>
+                  <label>Grade:</label>
+                  <input type="text" name="grade" value={formData.grade} onChange={handleInputChange} style={styles.input} />
+                </div>
+                <div style={styles.formGroup}>
+                  <label>Bureau / contact:</label>
+                  <input type="text" name="bureau" value={formData.bureau} onChange={handleInputChange} style={styles.input} />
+                </div>
+              </>
+            )}
             <div style={styles.buttonGroup}>
               <button type="submit" style={styles.saveButton}>
                 {editingUser ? 'Modifier' : 'Ajouter'}
@@ -265,6 +329,7 @@ function AdminUsers() {
             <th style={styles.th}>Nom</th>
             <th style={styles.th}>Prénom</th>
             <th style={styles.th}>Email</th>
+            <th style={styles.th}>Groupe / fiche</th>
             <th style={styles.th}>Rôle</th>
             <th style={styles.th}>Actions</th>
           </tr>
@@ -275,6 +340,7 @@ function AdminUsers() {
               <td style={styles.td}>{user.nom}</td>
               <td style={styles.td}>{user.prenom}</td>
               <td style={styles.td}>{user.email}</td>
+              <td style={{ ...styles.td, fontSize: 12, color: '#555' }}>{formatFiche(user)}</td>
               <td style={styles.td}>
                 <span style={{
                   ...styles.role,
