@@ -251,7 +251,7 @@ const Dashboard = () => {
     setAiInput('');
     setAiLoading(true);
     try {
-      const data = await aiService.ask(text);
+      const data = await aiService.chat(text);
       setAiMessages((prev) => [
         ...prev,
         {
@@ -280,7 +280,17 @@ const Dashboard = () => {
   const isAdmin = roles.includes('admin');
   const isEnseignant = roles.includes('enseignant');
   const isEtudiant = roles.includes('etudiant');
-  const roleLabel = isAdmin ? 'Administrateur' : isEnseignant ? 'Enseignant' : 'Etudiant';
+  const roleLabel = isAdmin ? 'Administrateur' : isEnseignant ? 'Enseignant' : 'Étudiant';
+  const roleCounts = {
+    etudiant: users.filter((u) => u.role === 'etudiant').length,
+    enseignant: users.filter((u) => u.role === 'enseignant').length,
+    admin: users.filter((u) => u.role === 'admin').length,
+  };
+  const ROLE_META = {
+    etudiant: { label: 'Étudiant', short: 'Étudiant', color: 'role-pill-etu' },
+    enseignant: { label: 'Enseignant', short: 'Enseignant', color: 'role-pill-ens' },
+    admin: { label: 'Administrateur', short: 'Admin', color: 'role-pill-adm' },
+  };
   const rawName = user ? (user.name || user.username || 'Utilisateur') : 'Utilisateur';
   const baseFirstName = rawName.split(' ')[0];
   const firstName = baseFirstName
@@ -289,9 +299,9 @@ const Dashboard = () => {
   const welcomeName = isEnseignant ? `Prof ${firstName}` : isAdmin ? `Admin ${firstName}` : firstName;
   const stats = isAdmin
     ? [
-        { label: 'Utilisateurs', value: users.length || 0 },
-        { label: 'Cours totaux', value: courses.length || 0 },
-        { label: 'Role', value: roleLabel },
+        { label: 'Étudiants', value: roleCounts.etudiant },
+        { label: 'Enseignants', value: roleCounts.enseignant },
+        { label: 'Administrateurs', value: roleCounts.admin },
       ]
     : isEnseignant
     ? [
@@ -335,6 +345,32 @@ const Dashboard = () => {
     .sort((a, b) => a.day - b.day);
   const highlightedDays = new Set(courseEvents.map((e) => e.day));
 
+  const topBarTitles = {
+    dashboard: 'Tableau de bord',
+    courses: 'Mes cours',
+    calendar: 'Calendrier',
+    upload: 'Publier un cours',
+    'admin-console': 'Console administration',
+    'admin-etudiants': 'Étudiants',
+    'admin-enseignants': 'Enseignants',
+    'admin-admins': 'Administrateurs',
+  };
+  const topBarTitle = topBarTitles[activeTab] || 'Tableau de bord';
+  const barRoleKeys = roles.filter((r) => ['admin', 'enseignant', 'etudiant'].includes(r));
+
+  const adminFilterRole =
+    activeTab === 'admin-etudiants'
+      ? 'etudiant'
+      : activeTab === 'admin-enseignants'
+        ? 'enseignant'
+        : activeTab === 'admin-admins'
+          ? 'admin'
+          : null;
+  const filteredAdminUsers = adminFilterRole
+    ? users.filter((u) => u.role === adminFilterRole)
+    : users;
+  const adminListUsers = adminFilterRole ? filteredAdminUsers : users;
+
   return (
     <div className="dashboard">
       <aside className="sidebar">
@@ -348,7 +384,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="s-sec">{isAdmin ? 'Administration' : isEnseignant ? 'Enseignement' : 'Espace etudiant'}</div>
+        <div className="s-sec">{isAdmin ? 'Principal' : isEnseignant ? 'Enseignement' : 'Espace étudiant'}</div>
         <button className={`ni ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
           <span className="ni-icon ni-icon-grid" />
           Tableau de bord
@@ -359,6 +395,53 @@ const Dashboard = () => {
             Mes cours
           </button>
         )}
+        {isAdmin && (
+          <>
+            <div className="s-sec">Console administration</div>
+            <button
+              type="button"
+              className={`ni ${activeTab === 'admin-console' ? 'active' : ''}`}
+              onClick={() => setActiveTab('admin-console')}
+            >
+              <span className="ni-dot ni-dot-console" aria-hidden />
+              Vue d&apos;ensemble
+            </button>
+            <button
+              type="button"
+              className={`ni ${activeTab === 'admin-etudiants' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('admin-etudiants');
+                setNewUser((p) => ({ ...p, role: 'etudiant' }));
+              }}
+            >
+              <span className="ni-dot ni-dot-etu" aria-hidden />
+              Étudiants
+            </button>
+            <button
+              type="button"
+              className={`ni ${activeTab === 'admin-enseignants' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('admin-enseignants');
+                setNewUser((p) => ({ ...p, role: 'enseignant' }));
+              }}
+            >
+              <span className="ni-dot ni-dot-ens" aria-hidden />
+              Enseignants
+            </button>
+            <button
+              type="button"
+              className={`ni ${activeTab === 'admin-admins' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab('admin-admins');
+                setNewUser((p) => ({ ...p, role: 'admin' }));
+              }}
+            >
+              <span className="ni-dot ni-dot-adm" aria-hidden />
+              Administrateurs
+            </button>
+          </>
+        )}
+        <div className="s-sec">Agenda</div>
         <button className={`ni ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>
           <span className="ni-icon ni-icon-calendar" />
           Calendrier
@@ -372,18 +455,16 @@ const Dashboard = () => {
             Ajouter cours
           </button>
         )}
-        {isAdmin && (
-          <button className={`ni ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            <span className="ni-icon ni-icon-users" />
-            Utilisateurs
-          </button>
-        )}
 
         <div className="s-footer">
           <div className="u-chip">
             <div className="av">{(user ? (user.name || user.username || 'U') : 'U').slice(0, 1).toUpperCase()}</div>
             <div>
-              <div className="u-role">{roleLabel}</div>
+              <div className="u-role">
+                {barRoleKeys.length > 0
+                  ? barRoleKeys.map((r) => ROLE_META[r]?.short || r).join(' · ')
+                  : roleLabel}
+              </div>
               <div className="u-name">{user ? (user.name || user.username) : ''}</div>
             </div>
           </div>
@@ -393,9 +474,19 @@ const Dashboard = () => {
 
       <div className="main">
         <div className="topbar">
-          <div className="tb-title">Tableau de bord</div>
+          <div className="tb-title">{topBarTitle}</div>
           <div className="tb-right">
-            <span className="badge-role">{roleLabel}</span>
+            {barRoleKeys.length > 0 ? (
+              <div className="tb-role-chips">
+                {barRoleKeys.map((r) => (
+                  <span key={r} className={`tb-role-chip tb-role-chip-${r}`}>
+                    {ROLE_META[r]?.label || r}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="badge-role">{roleLabel}</span>
+            )}
           </div>
         </div>
 
@@ -734,70 +825,177 @@ const Dashboard = () => {
           </div>
         )}
 
-        {activeTab === 'users' && isAdmin && (
-          <div className="card fade-in">
-            <div className="card-head">
-              <div className="card-title">Gestion des utilisateurs</div>
-              <button
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="app-primary-btn">
-                {showAddForm ? 'Fermer' : '+ Ajouter'}
-              </button>
-            </div>
-            <div className="card-body">
-
-            {showAddForm && (
-              <form onSubmit={handleCreateUser} className="users-add-form">
-                <input placeholder="Nom utilisateur" value={newUser.username} onChange={e => setNewUser({...newUser, username:e.target.value})} required className="users-input" />
-                <input placeholder="Email" type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email:e.target.value})} required className="users-input" />
-                <input placeholder="Mot de passe (min. 6 car.)" type="password" value={newUser.password} onChange={e => setNewUser({...newUser, password:e.target.value})} required minLength={6} autoComplete="new-password" className="users-input" />
-                <input placeholder="Nom" value={newUser.nom} onChange={e => setNewUser({...newUser, nom:e.target.value})} required className="users-input" />
-                <input placeholder="Prenom" value={newUser.prenom} onChange={e => setNewUser({...newUser, prenom:e.target.value})} required className="users-input" />
-                <select value={newUser.role} onChange={e => setNewUser({...newUser, role:e.target.value})} className="users-input">
-                  <option value="etudiant">Etudiant</option>
-                  <option value="enseignant">Enseignant</option>
-                  <option value="admin">Administrateur</option>
-                </select>
-                <button type="submit" className="users-submit-btn">Creer</button>
-              </form>
+        {isAdmin && (activeTab === 'admin-console' || adminFilterRole) && (
+          <div className="fade-in admin-console-root">
+            {activeTab === 'admin-console' && (
+              <>
+                <div className="admin-console-hero">
+                  <div className="admin-console-title">Console administration</div>
+                  <p className="admin-console-sub">Pilotage des comptes : répartition par rôle et actions rapides.</p>
+                </div>
+                <div className="admin-console-kpis">
+                  <button
+                    type="button"
+                    className="admin-kpi admin-kpi-etu"
+                    onClick={() => {
+                      setActiveTab('admin-etudiants');
+                      setNewUser((p) => ({ ...p, role: 'etudiant' }));
+                    }}
+                  >
+                    <span className="admin-kpi-n">{roleCounts.etudiant}</span>
+                    <span className="admin-kpi-l">Étudiants</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-kpi admin-kpi-ens"
+                    onClick={() => {
+                      setActiveTab('admin-enseignants');
+                      setNewUser((p) => ({ ...p, role: 'enseignant' }));
+                    }}
+                  >
+                    <span className="admin-kpi-n">{roleCounts.enseignant}</span>
+                    <span className="admin-kpi-l">Enseignants</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-kpi admin-kpi-adm"
+                    onClick={() => {
+                      setActiveTab('admin-admins');
+                      setNewUser((p) => ({ ...p, role: 'admin' }));
+                    }}
+                  >
+                    <span className="admin-kpi-n">{roleCounts.admin}</span>
+                    <span className="admin-kpi-l">Administrateurs</span>
+                  </button>
+                </div>
+              </>
+            )}
+            {adminFilterRole && (
+              <div className={`admin-role-banner admin-role-banner-${adminFilterRole}`}>
+                <span className="admin-role-banner-title">{ROLE_META[adminFilterRole].label}</span>
+                <span className="admin-role-banner-count">{filteredAdminUsers.length} compte(s)</span>
+              </div>
             )}
 
-            {usersLoading ? <p>Chargement...</p> : (
-              <table style={{width:'100%', marginTop:12}}>
-                <thead>
-                  <tr>
-                    <th>Nom</th>
-                    <th>Prenom</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th style={{textAlign:'center'}}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => {
-                    return (
-                      <tr key={u.id}>
-                        <td>{u.nom}</td>
-                        <td>{u.prenom}</td>
-                        <td>{u.email}</td>
-                        <td>
-                          <span style={{padding:'3px 8px', borderRadius:4, fontSize:12, fontWeight:'bold', background:u.role==='admin'?'#ff4444':u.role==='enseignant'?'#ffbb33':'#00C851', color:u.role==='enseignant'?'black':'white'}}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td style={{textAlign:'center'}}>
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="act act-r">
-                            Supprimer
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
+            <div className="card admin-user-card">
+              <div className="card-head">
+                <div className="card-title">
+                  {activeTab === 'admin-console'
+                    ? 'Tous les utilisateurs'
+                    : `Utilisateurs — ${ROLE_META[adminFilterRole].label}s`}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(!showAddForm)}
+                  className="app-primary-btn"
+                >
+                  {showAddForm ? 'Fermer' : '+ Ajouter un utilisateur'}
+                </button>
+              </div>
+              <div className="card-body">
+                {showAddForm && (
+                  <form onSubmit={handleCreateUser} className="users-add-form">
+                    <input
+                      placeholder="Nom d'utilisateur"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                      required
+                      className="users-input"
+                    />
+                    <input
+                      placeholder="Email"
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      required
+                      className="users-input"
+                    />
+                    <input
+                      placeholder="Mot de passe (min. 6 car.)"
+                      type="password"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      className="users-input"
+                    />
+                    <input
+                      placeholder="Nom"
+                      value={newUser.nom}
+                      onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
+                      required
+                      className="users-input"
+                    />
+                    <input
+                      placeholder="Prénom"
+                      value={newUser.prenom}
+                      onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
+                      required
+                      className="users-input"
+                    />
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      className="users-input"
+                      disabled={!!adminFilterRole}
+                      title={adminFilterRole ? 'Rôle imposé par la section' : ''}
+                    >
+                      <option value="etudiant">Étudiant</option>
+                      <option value="enseignant">Enseignant</option>
+                      <option value="admin">Administrateur</option>
+                    </select>
+                    <button type="submit" className="users-submit-btn">
+                      Créer le compte
+                    </button>
+                  </form>
+                )}
+
+                {usersLoading ? (
+                  <p>Chargement...</p>
+                ) : (
+                  <div className="admin-table-wrap">
+                    <table className="admin-users-table">
+                      <thead>
+                        <tr>
+                          <th>Identifiant</th>
+                          <th>Nom</th>
+                          <th>Prénom</th>
+                          <th>Email</th>
+                          <th>Rôle</th>
+                          <th style={{ textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminListUsers.map((u) => (
+                          <tr key={u.id}>
+                            <td className="td-mono">{u.username || '—'}</td>
+                            <td>{u.nom}</td>
+                            <td>{u.prenom}</td>
+                            <td>{u.email}</td>
+                            <td>
+                              <span
+                                className={`role-pill-table ${ROLE_META[u.role]?.color || ''}`}
+                              >
+                                {ROLE_META[u.role]?.label || u.role}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteUser(u.id)}
+                                className="act act-r"
+                              >
+                                Supprimer
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
