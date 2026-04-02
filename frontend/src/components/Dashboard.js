@@ -46,14 +46,16 @@ const Dashboard = () => {
   const [aiMessages, setAiMessages] = useState([
     {
       role: 'bot',
-      text: "Bonjour. Je suis l'assistant ENT de l'EST Salé. Posez une question sur l'école, les cours ou la plateforme — je réponds de façon courte et utile.",
+      text: "Bonjour. Je suis l'assistant ENT de l'EST Salé. Posez une question sur l'école, les cours ou la plateforme.",
       ts: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+  /** Libellés courts pour les puces ; le texte envoyé à Ollama est la question complète. */
   const aiSuggestions = [
-    "Comment accéder à mes cours sur l'ENT ?",
-    "À quoi sert l'espace étudiant à l'EST Salé ?",
-    "Comment publier un cours ? (enseignant)",
+    { label: 'Mes cours', prompt: "Comment accéder à mes cours sur l'ENT ?" },
+    { label: 'Emploi du temps', prompt: "Comment consulter mon emploi du temps sur l'ENT ?" },
+    { label: 'Calendrier', prompt: "Comment utiliser le calendrier de l'ENT ?" },
+    { label: 'Publier un cours', prompt: "Comment publier un cours en tant qu'enseignant ?" },
   ];
 
   useEffect(() => {
@@ -243,15 +245,24 @@ const Dashboard = () => {
 
   const handleLogout = () => { authService.logout(); navigate('/login'); };
 
-  const handleAiSend = async (presetText) => {
-    const text = (presetText || aiInput).trim();
-    if (!text || aiLoading) return;
+  const handleAiSend = async (chipOrPreset) => {
+    let textForApi;
+    let textShown;
+    if (chipOrPreset && typeof chipOrPreset === 'object' && chipOrPreset.prompt) {
+      textForApi = chipOrPreset.prompt.trim();
+      textShown = chipOrPreset.label.trim();
+    } else {
+      const raw = (typeof chipOrPreset === 'string' ? chipOrPreset : '') || aiInput;
+      textForApi = raw.trim();
+      textShown = textForApi;
+    }
+    if (!textForApi || aiLoading) return;
     const ts = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    setAiMessages((prev) => [...prev, { role: 'user', text, ts }]);
+    setAiMessages((prev) => [...prev, { role: 'user', text: textShown, ts }]);
     setAiInput('');
     setAiLoading(true);
     try {
-      const data = await aiService.chat(text);
+      const data = await aiService.chat(textForApi);
       setAiMessages((prev) => [
         ...prev,
         {
@@ -286,6 +297,7 @@ const Dashboard = () => {
     enseignant: users.filter((u) => u.role === 'enseignant').length,
     admin: users.filter((u) => u.role === 'admin').length,
   };
+  const totalUsers = users.length;
   const ROLE_META = {
     etudiant: { label: 'Étudiant', short: 'Étudiant', color: 'role-pill-etu' },
     enseignant: { label: 'Enseignant', short: 'Enseignant', color: 'role-pill-ens' },
@@ -496,6 +508,50 @@ const Dashboard = () => {
         {isEnseignant ? (
           <div className="welcome-banner fade-in">
             <div className="wb-title">{`Bienvenue, ${welcomeName} !`}</div>
+          </div>
+        ) : isAdmin ? (
+          <div className="admin-dashboard-welcome fade-in">
+            <div className="admin-db-hero">
+              <div className="admin-db-hero-main">
+                <p className="admin-db-kicker">Espace administrateur · ENT EST Salé</p>
+                <h1 className="admin-db-title">{`Bienvenue, ${welcomeName}`}</h1>
+                <p className="admin-db-lead">
+                  Pilotez les comptes, consultez les statistiques et accédez à la console depuis le menu latéral.
+                </p>
+                <div className="admin-db-actions">
+                  <button
+                    type="button"
+                    className="admin-db-btn admin-db-btn-primary"
+                    onClick={() => setActiveTab('admin-console')}
+                  >
+                    Ouvrir la console
+                  </button>
+                  <button type="button" className="admin-db-btn admin-db-btn-ghost" onClick={() => setActiveTab('admin-etudiants')}>
+                    Liste étudiants
+                  </button>
+                </div>
+              </div>
+              <div className="admin-db-hero-aside" aria-label="Synthèse des comptes">
+                <div className="admin-db-stat-card">
+                  <span className="admin-db-stat-n">{totalUsers}</span>
+                  <span className="admin-db-stat-l">Comptes actifs</span>
+                </div>
+                <div className="admin-db-mini-grid">
+                  <div className="admin-db-mini">
+                    <span className="admin-db-mini-n">{roleCounts.etudiant}</span>
+                    <span className="admin-db-mini-l">Étudiants</span>
+                  </div>
+                  <div className="admin-db-mini">
+                    <span className="admin-db-mini-n">{roleCounts.enseignant}</span>
+                    <span className="admin-db-mini-l">Enseignants</span>
+                  </div>
+                  <div className="admin-db-mini">
+                    <span className="admin-db-mini-n">{roleCounts.admin}</span>
+                    <span className="admin-db-mini-l">Admins</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="welcome-card fade-in">
@@ -830,8 +886,17 @@ const Dashboard = () => {
             {activeTab === 'admin-console' && (
               <>
                 <div className="admin-console-hero">
-                  <div className="admin-console-title">Console administration</div>
-                  <p className="admin-console-sub">Pilotage des comptes : répartition par rôle et actions rapides.</p>
+                  <div className="admin-console-hero-text">
+                    <p className="admin-console-kicker">Vue d&apos;ensemble</p>
+                    <div className="admin-console-title">Console administration</div>
+                    <p className="admin-console-sub">
+                      Répartition des comptes par rôle, création et suppression depuis le tableau ci-dessous.
+                    </p>
+                  </div>
+                  <div className="admin-console-hero-badge" aria-hidden="true">
+                    <span className="admin-console-total-n">{totalUsers}</span>
+                    <span className="admin-console-total-hint">comptes</span>
+                  </div>
                 </div>
                 <div className="admin-console-kpis">
                   <button
@@ -952,7 +1017,25 @@ const Dashboard = () => {
                 )}
 
                 {usersLoading ? (
-                  <p>Chargement...</p>
+                  <div className="admin-loading-block" role="status" aria-live="polite">
+                    <div className="admin-loading-spinner" />
+                    <span>Chargement des comptes…</span>
+                  </div>
+                ) : adminListUsers.length === 0 ? (
+                  <div className="admin-empty-state" role="status">
+                    <div className="admin-empty-icon" aria-hidden="true" />
+                    <h3 className="admin-empty-title">Aucun utilisateur dans cette vue</h3>
+                    <p className="admin-empty-text">
+                      Créez un compte ou choisissez une autre section dans le menu « Console administration ».
+                    </p>
+                    <button
+                      type="button"
+                      className="app-primary-btn admin-empty-cta"
+                      onClick={() => setShowAddForm(true)}
+                    >
+                      + Ajouter un utilisateur
+                    </button>
+                  </div>
                 ) : (
                   <div className="admin-table-wrap">
                     <table className="admin-users-table">
@@ -1063,7 +1146,7 @@ const Dashboard = () => {
       </div>
 
       <div className="ai-float">
-        <button className="ai-fab" onClick={() => setAiOpen((v) => !v)} title="Assistant IA">
+        <button className="ai-fab" onClick={() => setAiOpen((v) => !v)} title="Assistant IA · EST Salé · Ollama">
           <span className="ai-ring" />
           <svg className="ai-fab-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="6.5" y="8" width="11" height="9" rx="3" stroke="currentColor" strokeWidth="1.8" />
@@ -1077,7 +1160,7 @@ const Dashboard = () => {
             <div className="ai-panel-head">
               <div>
                 <div className="ai-title">Assistant IA</div>
-                <div className="ai-sub">EST Salé · Réponses courtes et ciblées (Ollama)</div>
+                <div className="ai-sub">EST Salé · Ollama</div>
                 <div className="ai-status"><span className="ai-status-dot" />En ligne</div>
               </div>
               <button className="ai-close-btn" onClick={() => setAiOpen(false)} aria-label="Fermer">×</button>
@@ -1107,8 +1190,8 @@ const Dashboard = () => {
             </div>
             <div className="ai-suggestions">
               {aiSuggestions.map((s) => (
-                <button key={s} className="ai-chip" onClick={() => handleAiSend(s)} disabled={aiLoading}>
-                  {s}
+                <button key={s.label} type="button" className="ai-chip" onClick={() => handleAiSend(s)} disabled={aiLoading}>
+                  {s.label}
                 </button>
               ))}
             </div>

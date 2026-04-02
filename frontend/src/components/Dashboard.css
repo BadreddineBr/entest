@@ -2290,3 +2290,318 @@ tbody tr:hover {
   color: #991b1b;
   border: 1px solid #fca5a5;
 }
+
+/* —— Admin dashboard home (tab Tableau de bord) —— */
+.admin-dashboard-welcome {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(26, 92, 42, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.admin-db-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 20px;
+  padding: 24px 26px;
+  background: linear-gradient(135deg, #143d22 0%, #1a5c2a 38%, #2d8a45 100%);
+  color: #fff;
+  position: relative;
+}
+
+.admin-db-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.14), transparent 50%);
+}
+
+.admin-db-hero-main {
+  flex: 1 1 280px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-db-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 8px;
+}
+
+.admin-db-title {
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+
+.admin-db-lead {
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 520px;
+  margin-bottom: 18px;
+}
+
+.admin-db-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-db-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.admin-db-btn-primary {
+  background: #fff;
+  color: #1a5c2a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.admin-db-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.admin-db-btn-ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.admin-db-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-db-hero-aside {
+  flex: 0 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-db-stat-card {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  padding: 16px 18px;
+  text-align: center;
+}
+
+.admin-db-stat-n {
+  display: block;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.admin-db-stat-l {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-db-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.admin-db-mini {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.admin-db-mini-n {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.admin-db-mini-l {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 720px) {
+  .admin-db-hero {
+    padding: 20px 18px;
+  }
+
+  .admin-db-mini-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Console hero: two-column + total badge */
+.admin-console-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-console-hero-text {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.admin-console-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 6px;
+}
+
+.admin-console-hero-badge {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  min-width: 100px;
+}
+
+.admin-console-total-n {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.admin-console-total-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Loading & empty states (admin table) */
+.admin-loading-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 48px 24px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #1a5c2a;
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+.admin-empty-state {
+  text-align: center;
+  padding: 40px 20px 48px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.admin-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #e8f5e9, #f1f5f9);
+  border: 1px solid #d1e7d4;
+  position: relative;
+}
+
+.admin-empty-icon::before,
+.admin-empty-icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #94a3b8;
+  border-radius: 2px;
+}
+
+.admin-empty-icon::before {
+  width: 28px;
+  height: 4px;
+  top: 22px;
+}
+
+.admin-empty-icon::after {
+  width: 20px;
+  height: 20px;
+  bottom: 16px;
+  border-radius: 4px;
+  background: #cbd5e1;
+}
+
+.admin-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.admin-empty-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.admin-empty-cta {
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.admin-user-card .card-head {
+  background: linear-gradient(180deg, #fafbf9 0%, #fff 100%);
+}
+
+.admin-user-card .card-title {
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
