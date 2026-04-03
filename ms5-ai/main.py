@@ -1,8 +1,19 @@
+import os
+from typing import List
+
+import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import requests
-import os
+
+
+def _cors_origins() -> List[str]:
+    raw = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.61:3000",
+    )
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
 
 # ==================== Initialisation FastAPI ====================
 app = FastAPI(
@@ -13,7 +24,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,4 +96,10 @@ def chat(payload: ChatRequest):
             reply = "Aucune réponse générée."
         return {"reply": reply}
     except requests.RequestException as exc:
-        raise HTTPException(status_code=503, detail=f"Ollama indisponible: {exc}")
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Ollama indisponible ({OLLAMA_URL}, modèle {OLLAMA_MODEL}): {exc}. "
+                f"Tirez le modèle si besoin: docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+            ),
+        )

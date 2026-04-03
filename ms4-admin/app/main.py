@@ -6,7 +6,7 @@ import base64
 import json
 import logging
 import os
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +19,16 @@ logger = logging.getLogger(__name__)
 
 ALLOW_FAKE_ADMIN_TOKEN = os.getenv("ALLOW_FAKE_ADMIN_TOKEN", "false").lower() == "true"
 
+
+def _cors_origins() -> List[str]:
+    """Origines explicites requises si allow_credentials=True (interdit avec '*')."""
+    raw = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.61:3000",
+    )
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
 app = FastAPI(
     title="Service d'Administration - ENT EST Salé",
     description="Gestion des utilisateurs (Keycloak)",
@@ -27,7 +37,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

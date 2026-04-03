@@ -116,6 +116,8 @@ services:
       KEYCLOAK_CLIENT_ID: ent-backend
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      # Origines du frontend (obligatoire avec credentials ; sinon erreur CORS dans le navigateur)
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.61:3000"
     depends_on:
       keycloak:
         condition: service_started
@@ -131,6 +133,7 @@ services:
       # Réponses plus rapides : moins de tokens (ex. 256–400), température basse (ex. 0.25–0.45)
       OLLAMA_NUM_PREDICT: "320"
       OLLAMA_TEMPERATURE: "0.35"
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://192.168.1.61:3000"
     depends_on:
       - ollama
 

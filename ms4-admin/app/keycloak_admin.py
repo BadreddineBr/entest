@@ -30,16 +30,23 @@ def _admin_token_url() -> str:
 
 def get_admin_token() -> str:
     global _admin_token
-    r = requests.post(
-        _admin_token_url(),
-        data={
-            "grant_type": "password",
-            "client_id": "admin-cli",
-            "username": ADMIN_USER,
-            "password": ADMIN_PASSWORD,
-        },
-        timeout=30,
-    )
+    try:
+        r = requests.post(
+            _admin_token_url(),
+            data={
+                "grant_type": "password",
+                "client_id": "admin-cli",
+                "username": ADMIN_USER,
+                "password": ADMIN_PASSWORD,
+            },
+            timeout=30,
+        )
+    except requests.exceptions.RequestException as e:
+        logger.exception("Keycloak token: connexion impossible vers %s", KEYCLOAK_URL)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Keycloak inaccessible ({KEYCLOAK_URL}): {e}",
+        ) from e
     if r.status_code != 200:
         logger.error("Keycloak admin token failed: %s %s", r.status_code, r.text)
         raise HTTPException(
@@ -59,7 +66,14 @@ def _headers() -> Dict[str, str]:
 
 def _admin_request(method: str, path: str, **kwargs: Any) -> requests.Response:
     url = f"{KEYCLOAK_URL}/admin/realms/{REALM}{path}"
-    r = requests.request(method, url, headers=_headers(), timeout=30, **kwargs)
+    try:
+        r = requests.request(method, url, headers=_headers(), timeout=30, **kwargs)
+    except requests.exceptions.RequestException as e:
+        logger.exception("Keycloak API %s %s", method, path)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Keycloak inaccessible ({KEYCLOAK_URL}): {e}",
+        ) from e
     if r.status_code == 401:
         global _admin_token
         _admin_token = None
