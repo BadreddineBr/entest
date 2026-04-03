@@ -1,10 +1,13 @@
+import logging
 import os
-from typing import List
+from typing import List, Optional
 
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 def _cors_origins() -> List[str]:
@@ -54,6 +57,68 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
 
 
+def _ollama_options() -> dict:
+    return {
+        "temperature": OLLAMA_TEMPERATURE,
+        "num_predict": OLLAMA_NUM_PREDICT,
+        "top_p": 0.9,
+        "repeat_penalty": 1.12,
+    }
+
+
+def _parse_chat_response(data: dict) -> str:
+    msg = data.get("message") or {}
+    reply = (msg.get("content") or "").strip()
+    if not reply:
+        reply = (data.get("response") or "").strip()
+    return reply
+
+
+def _ollama_chat(user_text: str) -> Optional[str]:
+    """POST /api/chat (Ollama récent). Retourne None si l’endpoint n’existe pas (404)."""
+    body = {
+        "model": OLLAMA_MODEL,
+        "stream": False,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_text},
+        ],
+        "options": _ollama_options(),
+    }
+    resp = requests.post(
+        f"{OLLAMA_URL}/api/chat",
+        json=body,
+        timeout=90,
+    )
+    if resp.status_code == 404:
+        logger.info("Ollama /api/chat absent (404), repli sur /api/generate")
+        return None
+    resp.raise_for_status()
+    data = resp.json()
+    return _parse_chat_response(data) or None
+
+
+def _ollama_generate(user_text: str) -> str:
+    """POST /api/generate — compatible toutes les versions Ollama avec ce endpoint."""
+    prompt = (
+        f"{SYSTEM_PROMPT}\n\n---\nQuestion : {user_text}\n\nRéponse (en français) :"
+    )
+    body = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": _ollama_options(),
+    }
+    resp = requests.post(
+        f"{OLLAMA_URL}/api/generate",
+        json=body,
+        timeout=90,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    return (data.get("response") or "").strip()
+
+
 @app.get("/")
 def health():
     return {"service": "ms5-ai", "status": "ok", "provider": "ollama", "model": OLLAMA_MODEL}
@@ -65,33 +130,10 @@ def chat(payload: ChatRequest):
     if not user_text:
         raise HTTPException(status_code=400, detail="Message vide")
 
-    body = {
-        "model": OLLAMA_MODEL,
-        "stream": False,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_text},
-        ],
-        "options": {
-            "temperature": OLLAMA_TEMPERATURE,
-            "num_predict": OLLAMA_NUM_PREDICT,
-            "top_p": 0.9,
-            "repeat_penalty": 1.12,
-        },
-    }
-
     try:
-        resp = requests.post(
-            f"{OLLAMA_URL}/api/chat",
-            json=body,
-            timeout=90,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        msg = data.get("message") or {}
-        reply = (msg.get("content") or "").strip()
-        if not reply:
-            reply = (data.get("response") or "").strip()
+        reply = _ollama_chat(user_text)
+        if reply is None:
+            reply = _ollama_generate(user_text)
         if not reply:
             reply = "Aucune réponse générée."
         return {"reply": reply}
@@ -100,6 +142,6 @@ def chat(payload: ChatRequest):
             status_code=503,
             detail=(
                 f"Ollama indisponible ({OLLAMA_URL}, modèle {OLLAMA_MODEL}): {exc}. "
-                f"Tirez le modèle si besoin: docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+                f"Vérifiez le conteneur et tirez le modèle: docker compose exec ollama ollama pull {OLLAMA_MODEL}"
             ),
-        )
+        ) from exc
