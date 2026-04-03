@@ -54,6 +54,7 @@ services:
       - minio-data:/data
 
   # ── Microservices ────────────────────────────────────────
+  # Après le premier démarrage : docker compose exec ollama ollama pull llama3.2:1b
   ollama:
     image: ollama/ollama:latest
     container_name: ent-ollama
@@ -129,7 +130,8 @@ services:
       - "8005:8000"
     environment:
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: llama3
+      # Modèle léger (rapide à télécharger). Alternative : llama3, mistral, etc. après ollama pull
+      OLLAMA_MODEL: llama3.2:1b
       # Réponses plus rapides : moins de tokens (ex. 256–400), température basse (ex. 0.25–0.45)
       OLLAMA_NUM_PREDICT: "320"
       OLLAMA_TEMPERATURE: "0.35"

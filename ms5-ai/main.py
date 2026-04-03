@@ -49,7 +49,7 @@ app.add_middleware(
 # ==================== Configuration Ollama ====================
 # Nom du service Docker : « ollama » (pas le container_name)
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434").rstrip("/")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 
 # Réponses plus rapides : moins de tokens, température modérée
 OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.35"))
