@@ -1,10 +1,25 @@
 import axios from 'axios';
 
-const AUTH_URL = process.env.REACT_APP_AUTH_URL || 'http://192.168.1.61:8000';
-const AJOUT_URL = process.env.REACT_APP_AJOUT_URL || 'http://192.168.1.61:8002';
-const DOWNLOAD_URL = process.env.REACT_APP_DOWNLOAD_URL || 'http://192.168.1.61:8003';
-const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || 'http://192.168.1.61:8004';
-const AI_URL = process.env.REACT_APP_AI_URL || 'http://192.168.1.61:8005';
+/**
+ * Même machine que la page (ex. http://192.168.1.50:3000 → API sur 192.168.1.50:800x).
+ * Évite les URLs figées 192.168.1.61 quand vous ouvrez l’ENT depuis une autre IP du LAN.
+ */
+export function getApiHost() {
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return window.location.hostname;
+  }
+  return process.env.REACT_APP_DEFAULT_HOST || 'localhost';
+}
+
+function defaultBase(port) {
+  return `http://${getApiHost()}:${port}`;
+}
+
+const AUTH_URL = process.env.REACT_APP_AUTH_URL || defaultBase(8000);
+const AJOUT_URL = process.env.REACT_APP_AJOUT_URL || defaultBase(8002);
+const DOWNLOAD_URL = process.env.REACT_APP_DOWNLOAD_URL || defaultBase(8003);
+const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || defaultBase(8004);
+const AI_URL = process.env.REACT_APP_AI_URL || defaultBase(8005);
 
 const authApi = axios.create({ baseURL: AUTH_URL });
 const ajoutApi = axios.create({ baseURL: AJOUT_URL });
@@ -103,4 +118,5 @@ export {
   DOWNLOAD_URL,
   ADMIN_URL,
   AI_URL,
+  defaultBase,
 };

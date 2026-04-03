@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import requests
 from fastapi import FastAPI, HTTPException
@@ -18,6 +18,18 @@ def _cors_origins() -> List[str]:
     return [o.strip() for o in raw.split(",") if o.strip()]
 
 
+def _cors_origin_regex() -> Optional[str]:
+    raw = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+    if raw == "0" or raw.lower() == "false":
+        return None
+    if raw:
+        return raw
+    return (
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        r"(:\d+)?$"
+    )
+
+
 # ==================== Initialisation FastAPI ====================
 app = FastAPI(
     title="MS5 - AI Assistant",
@@ -28,13 +40,15 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ==================== Configuration Ollama ====================
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ent-ollama:11434").rstrip("/")
+# Nom du service Docker : « ollama » (pas le container_name)
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
 # Réponses plus rapides : moins de tokens, température modérée
@@ -98,6 +112,25 @@ def _ollama_chat(user_text: str) -> Optional[str]:
     return _parse_chat_response(data) or None
 
 
+def _ollama_error_text(resp: Any) -> str:
+    try:
+        j = resp.json()
+        if isinstance(j, dict) and j.get("error"):
+            return str(j["error"])
+    except Exception:
+        pass
+    return (resp.text or "")[:500]
+
+
+def _model_is_available(model_names: List[str]) -> bool:
+    for m in model_names:
+        if not m:
+            continue
+        if m == OLLAMA_MODEL or m.startswith(f"{OLLAMA_MODEL}:"):
+            return True
+    return False
+
+
 def _ollama_generate(user_text: str) -> str:
     """POST /api/generate — compatible toutes les versions Ollama avec ce endpoint."""
     prompt = (
@@ -114,7 +147,16 @@ def _ollama_generate(user_text: str) -> str:
         json=body,
         timeout=90,
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        err = _ollama_error_text(resp)
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Ollama /api/generate : {err or resp.reason}. "
+                f"Modèle attendu : {OLLAMA_MODEL}. "
+                f"Vérifiez avec GET /api/ai/health et : docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+            ),
+        )
     data = resp.json()
     return (data.get("response") or "").strip()
 
@@ -122,6 +164,42 @@ def _ollama_generate(user_text: str) -> str:
 @app.get("/")
 def health():
     return {"service": "ms5-ai", "status": "ok", "provider": "ollama", "model": OLLAMA_MODEL}
+
+
+@app.get("/api/ai/health")
+def ai_health():
+    """Vérifie la connexion à Ollama et la présence du modèle configuré."""
+    out: dict = {
+        "service": "ms5-ai",
+        "ollama_url": OLLAMA_URL,
+        "model_configured": OLLAMA_MODEL,
+        "ollama_reachable": False,
+        "model_ready": False,
+        "models": [],
+    }
+    try:
+        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=8)
+        if not r.ok:
+            out["error"] = _ollama_error_text(r)
+            return out
+        data = r.json()
+        names = [m.get("name") for m in data.get("models", []) if m.get("name")]
+        out["ollama_reachable"] = True
+        out["models"] = names[:40]
+        out["model_ready"] = _model_is_available(names)
+        if not out["model_ready"] and names:
+            out["hint"] = (
+                f"Aucun modèle ne correspond à OLLAMA_MODEL={OLLAMA_MODEL!r}. "
+                f"Exemple : docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+            )
+        elif not names:
+            out["hint"] = (
+                f"Aucun modèle téléchargé. Exécutez : "
+                f"docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+            )
+    except requests.RequestException as e:
+        out["error"] = str(e)
+    return out
 
 
 @app.post("/api/ai/chat")
@@ -137,6 +215,18 @@ def chat(payload: ChatRequest):
         if not reply:
             reply = "Aucune réponse générée."
         return {"reply": reply}
+    except requests.HTTPError as exc:
+        detail_txt = str(exc)
+        if exc.response is not None:
+            detail_txt = _ollama_error_text(exc.response) or detail_txt
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Ollama /api/chat ({OLLAMA_URL}, modèle {OLLAMA_MODEL}): {detail_txt}. "
+                f"Diagnostic : GET /api/ai/health sur ai-service. "
+                f"Télécharger le modèle : docker compose exec ollama ollama pull {OLLAMA_MODEL}"
+            ),
+        ) from exc
     except requests.RequestException as exc:
         raise HTTPException(
             status_code=503,

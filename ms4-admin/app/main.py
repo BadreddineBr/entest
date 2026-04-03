@@ -29,6 +29,19 @@ def _cors_origins() -> List[str]:
     return [o.strip() for o in raw.split(",") if o.strip()]
 
 
+def _cors_origin_regex() -> Optional[str]:
+    """Autorise tout le LAN (192.168.x.x, 10.x) pour le dev sans lister chaque IP."""
+    raw = os.getenv("CORS_ORIGIN_REGEX", "").strip()
+    if raw == "0" or raw.lower() == "false":
+        return None
+    if raw:
+        return raw
+    return (
+        r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        r"(:\d+)?$"
+    )
+
+
 app = FastAPI(
     title="Service d'Administration - ENT EST Salé",
     description="Gestion des utilisateurs (Keycloak)",
@@ -38,6 +51,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

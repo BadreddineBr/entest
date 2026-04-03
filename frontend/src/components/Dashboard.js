@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService, coursService, aiService } from '../services/api';
+import { authService, coursService, aiService, AJOUT_URL, getApiHost } from '../services/api';
 import { getUsers, createUser, deleteUser } from '../services/adminService';
 import './Dashboard.css';
 
-const MINIO = 'http://192.168.1.61:9000/courses/';
+const getMinioBase = () => `http://${getApiHost()}:9000/courses/`;
 const GDOCS = 'https://docs.google.com/viewer?embedded=true&url=';
 
 function getMinioUrl(fileUrl) {
   var fileName = fileUrl ? fileUrl.split('/').pop() : '';
-  return MINIO + encodeURIComponent(fileName);
+  return getMinioBase() + encodeURIComponent(fileName);
 }
 
 const Dashboard = () => {
@@ -189,7 +189,7 @@ const Dashboard = () => {
       }
       
       // Send request
-      const response = await fetch(`http://192.168.1.61:8002/api/courses/${courseId}`, {
+      const response = await fetch(`${AJOUT_URL}/api/courses/${courseId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
