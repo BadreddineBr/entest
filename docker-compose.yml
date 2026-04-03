@@ -54,7 +54,8 @@ services:
       - minio-data:/data
 
   # ── Microservices ────────────────────────────────────────
-  # Après le premier démarrage : docker compose exec ollama ollama pull llama3.2:1b
+  # Modèle non inclus dans l’image : après le 1er « up », exécuter :
+  #   ./scripts/ollama-pull.sh   ou   docker compose exec ollama ollama pull llama3.2:1b
   ollama:
     image: ollama/ollama:latest
     container_name: ent-ollama
